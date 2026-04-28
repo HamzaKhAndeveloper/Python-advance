@@ -1,12 +1,11 @@
-from fastapi import FastAPI
-from routes import user
+from fastapi import FastAPI 
 
 app = FastAPI()
-
-app.include_router(user.router)
-
-
 
 @app.get("/")
 def root():
     return {"message": "Welcome to My First FastAPI Application"}
+
+@app.get("/user/{user}")
+def getuser(user:str):
+    return {"username":user}    
