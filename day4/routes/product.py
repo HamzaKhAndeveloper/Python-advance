@@ -1,7 +1,7 @@
-from h11._abnf import status_code
 from fastapi import APIRouter,Depends,HTTPException
 from database import getdb
 from sqlalchemy.orm import Session
+from models.user import User
 from models.product import Product
 from pydantic import BaseModel
 router = APIRouter()
@@ -11,15 +11,23 @@ class ProductSchema(BaseModel):
     description: str
 
 @router.post("/product",status_code=201)
-def create_product(product: ProductSchema,db:Session = Depends(getdb)):
-    products = Product(
-        name = product.name,
-        price = product.price,
-        description = product.description
-    )
-    db.add(products)
-    db.commit()
-    return {"message":"product created successfully"}
+def create_product(product: ProductSchema,user_id:int,db:Session = Depends(getdb)):
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if user is None:
+            raise HTTPException(status_code=404,detail="user not found")
+        products = Product(
+            name = product.name,
+            price = product.price,
+            description = product.description,
+            user_id = user.id
+        )
+        db.add(products)
+        db.commit()
+        return {"message":"product created successfully"}
+    except Exception:
+        db.rollback()
+        return HTTPException(status_code=500,detail="internal server error")
 
 @router.get("/product",status_code=200)
 def get_product(db:Session = Depends(getdb)):
