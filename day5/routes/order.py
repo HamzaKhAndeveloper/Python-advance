@@ -5,11 +5,11 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import getdb
 from getuser import get_user
+from models.product_model import Product
 
 router = APIRouter()
 
 class OrderItemsSchema(BaseModel):
-    order_id: int
     product_id: int
     quantity: int
 
@@ -19,10 +19,10 @@ class OrderSchema(BaseModel):
 
 
 @router.post("/order")
-def createorder(order: OrderSchema,db: Session = Depends(getdb),user: str = Depends(get_user)):
+def createorder(order: OrderSchema,db: Session = Depends(getdb),user: int = Depends(get_user)):
     try:
         neworder = Order(
-            user_id = user.id
+            user_id = user
         )
         db.add(neworder)
         db.flush()
@@ -44,4 +44,18 @@ def createorder(order: OrderSchema,db: Session = Depends(getdb),user: str = Depe
 @router.get("/order",status_code=200)
 def getorders(db: Session = Depends(getdb)):
     orders = db.query(Order).all()
-    return orders
+    result = []
+    for o in orders:
+        items = []
+        for i in o.items:
+            itm = db.query(Product).filter(Product.id == i.product_id).first()
+            items.append({
+                "product_name":itm.name,
+                "quantity" : i.quantity
+            })
+        result.append({
+            "order_id": o.id ,
+            "user_id" : o.user_id,
+            "items": items 
+        })
+    return result    
