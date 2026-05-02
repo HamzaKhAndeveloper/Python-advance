@@ -4,24 +4,25 @@ from models.product_model import Order,OrderItems
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import getdb
-
+from getuser import get_user
 
 router = APIRouter()
-
-class OrderSchema(BaseModel):
-    user_id: int 
-    items: List[OrderItemsSchema]
 
 class OrderItemsSchema(BaseModel):
     order_id: int
     product_id: int
     quantity: int
 
+
+class OrderSchema(BaseModel):
+    items: List[OrderItemsSchema]
+
+
 @router.post("/order")
-def createorder(order: OrderSchema,db: Session = Depends(getdb)):
+def createorder(order: OrderSchema,db: Session = Depends(getdb),user: str = Depends(get_user)):
     try:
         neworder = Order(
-            user_id = order.user_id
+            user_id = user.id
         )
         db.add(neworder)
         db.flush()
